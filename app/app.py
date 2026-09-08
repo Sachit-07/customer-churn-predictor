@@ -1,5 +1,9 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from src.preprocess import build_feature_vector
 import streamlit as st
 import joblib
+from src.llm_advisor import get_business_advice
 
 st.title("📉 Customer Churn Predictor")
 
@@ -41,9 +45,6 @@ with col2:
 
 total_charges = st.number_input("Total Charges", min_value=0.0, value=float(tenure) * monthly_charges)
 
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from src.preprocess import build_feature_vector
 
 if st.button("Predict Churn"):
     raw_input = {
@@ -75,3 +76,19 @@ if st.button("Predict Churn"):
         st.error(f"⚠️ Likely to Churn — Confidence: {churn_proba:.0%}")
     else:
         st.success(f"✅ Likely to Stay — Confidence: {1 - churn_proba:.0%}")
+
+    st.subheader("🤖 AI Business Advisor")
+    with st.spinner("Getting explanation..."):
+        prediction_label = "Likely to Churn" if churn_proba >= 0.5 else "Likely to Stay"
+        confidence = churn_proba if churn_proba >= 0.5 else 1 - churn_proba
+        advice = get_business_advice(raw_input, prediction_label, confidence)
+
+    st.write(advice["explanation"])
+
+    st.markdown("**Risk Factors:**")
+    for factor in advice["risk_factors"]:
+        st.markdown(f"- {factor}")
+
+    st.markdown("**Retention Suggestions:**")
+    for suggestion in advice["retention_suggestions"]:
+        st.markdown(f"- {suggestion}")
